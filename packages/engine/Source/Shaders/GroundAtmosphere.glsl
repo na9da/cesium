@@ -2,12 +2,12 @@ void computeAtmosphereScattering(vec3 positionWC, vec3 lightDirection, out vec3 
 
     vec3 cameraToPositionWC = positionWC - czm_viewerPositionWC;
     vec3 cameraToPositionWCDirection = normalize(cameraToPositionWC);
-    czm_ray primaryRay = czm_ray(czm_viewerPositionWC, cameraToPositionWCDirection);
-    
+
     float atmosphereInnerRadius = length(positionWC);
 
     computeScattering(
-        primaryRay,
+        czm_viewerPositionWC,
+        cameraToPositionWCDirection,
         length(cameraToPositionWC),
         lightDirection,
         atmosphereInnerRadius,

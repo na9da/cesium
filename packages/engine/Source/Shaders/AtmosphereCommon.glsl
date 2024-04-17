@@ -24,7 +24,8 @@ const int LIGHT_STEPS_MAX = 4; // Maximum number of times the light is sampled f
  * @glslFunction
  */
 void computeScattering(
-    czm_ray primaryRay,
+    vec3 primaryRayOrigin,
+    vec3 primaryRayDirection,
     float primaryRayLength,
     vec3 lightDirection,
     float atmosphereInnerRadius,
@@ -43,10 +44,12 @@ void computeScattering(
     vec3 origin = vec3(0.0);
 
     // Calculate intersection from the camera to the outer ring of the atmosphere.
-    czm_raySegment primaryRayAtmosphereIntersect = czm_raySphereIntersectionInterval(primaryRay, origin, atmosphereOuterRadius);
+    float primaryStart;
+    float primaryStop;
+    czm_raySphereIntersectionInterval(primaryRayOrigin, primaryRayDirection, origin, atmosphereOuterRadius, primaryStart, primaryStop);
 
     // Return empty colors if no intersection with the atmosphere geometry.
-    if (primaryRayAtmosphereIntersect == czm_emptyRaySegment) {
+    if (primaryStart == -czm_infinity && primaryStop == -czm_infinity) {
         return;
     }
 
@@ -54,16 +57,16 @@ void computeScattering(
     // we implement a split strategy: sky or horizon.
     // For performance reasons, instead of a if/else branch
     // a soft choice is implemented through a weight 0.0 <= w_stop_gt_lprl <= 1.0
-    float x = 1e-7 * primaryRayAtmosphereIntersect.stop / length(primaryRayLength);
+    float x = 1e-7 * primaryStop / length(primaryRayLength);
     // Value close to 0.0: close to the horizon
     // Value close to 1.0: above in the sky
     float w_stop_gt_lprl = 0.5 * (1.0 + czm_approximateTanh(x));
 
     // The ray should start from the first intersection with the outer atmopshere, or from the camera position, if it is inside the atmosphere.
-    float start_0 = primaryRayAtmosphereIntersect.start;
-    primaryRayAtmosphereIntersect.start = max(primaryRayAtmosphereIntersect.start, 0.0);
+    float start_0 = primaryStart;
+    primaryStart = max(primaryStart, 0.0);
     // The ray should end at the exit from the atmosphere or at the distance to the vertex, whichever is smaller.
-    primaryRayAtmosphereIntersect.stop = min(primaryRayAtmosphereIntersect.stop, length(primaryRayLength));
+    primaryStop = min(primaryStop, length(primaryRayLength));
 
     // For the number of ray steps, distinguish inside or outside atmosphere (outer space)
     // (1) from outer space we have to use more ray steps to get a realistic rendering
@@ -74,10 +77,10 @@ void computeScattering(
     int LIGHT_STEPS = LIGHT_STEPS_MAX - int(w_inside_atmosphere * 2.0); // Number of times the light is sampled from the light source's intersection with the atmosphere to a sample position on the primary ray.
 
     // Setup for sampling positions along the ray - starting from the intersection with the outer ring of the atmosphere.
-    float rayPositionLength = primaryRayAtmosphereIntersect.start;
+    float rayPositionLength = primaryStart;
     // (1) Outside the atmosphere: constant rayStepLength
     // (2) Inside atmosphere: variable rayStepLength to compensate the rough rendering of the smaller number of ray steps
-    float totalRayLength = primaryRayAtmosphereIntersect.stop - rayPositionLength;
+    float totalRayLength = primaryStop - rayPositionLength;
     float rayStepLengthIncrease = w_inside_atmosphere * ((1.0 - w_stop_gt_lprl) * totalRayLength / (float(PRIMARY_STEPS * (PRIMARY_STEPS + 1)) / 2.0));
     float rayStepLength = max(1.0 - w_inside_atmosphere, w_stop_gt_lprl) * totalRayLength / max(7.0 * w_inside_atmosphere, float(PRIMARY_STEPS));
 
@@ -96,7 +99,7 @@ void computeScattering(
         }
 
         // Calculate sample position along viewpoint ray.
-        vec3 samplePosition = primaryRay.origin + primaryRay.direction * (rayPositionLength + rayStepLength);
+        vec3 samplePosition = primaryRayOrigin + primaryRayDirection * (rayPositionLength + rayStepLength);
 
         // Calculate height of sample position above ellipsoid.
         float sampleHeight = length(samplePosition) - atmosphereInnerRadius;
@@ -106,10 +109,11 @@ void computeScattering(
         opticalDepth += sampleDensity;
 
         // Generate ray from the sample position segment to the light source, up to the outer ring of the atmosphere.
-        czm_ray lightRay = czm_ray(samplePosition, lightDirection);
-        czm_raySegment lightRayAtmosphereIntersect = czm_raySphereIntersectionInterval(lightRay, origin, atmosphereOuterRadius);
+        float lightRayStart;
+        float lightRayStop;
+        czm_raySegment lightRayAtmosphereIntersect = czm_raySphereIntersectionInterval(samplePosition, lightDirection, origin, atmosphereOuterRadius, lightRayStart, lightRayStop);
 
-        float lightStepLength = lightRayAtmosphereIntersect.stop / float(LIGHT_STEPS);
+        float lightStepLength = lightRayStop / float(LIGHT_STEPS);
         float lightPositionLength = 0.0;
 
         vec2 lightOpticalDepth = vec2(0.0);
