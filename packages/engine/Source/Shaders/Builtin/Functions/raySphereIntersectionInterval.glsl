@@ -9,7 +9,7 @@
  * @param {float} radius The radius of the sphere.
  * @return {czm_raySegment} The intersection interval of the ray with the sphere.
  */
-czm_raySegment czm_raySphereIntersectionInterval(vec3 rayOrigin, vec3 rayDirection, vec3 center, float radius, out float t0, out float t1)
+void czm_raySphereIntersectionInterval(vec3 rayOrigin, vec3 rayDirection, vec3 center, float radius, out float t0, out float t1)
 {
     vec3 o = rayOrigin;
     vec3 d = rayDirection;
@@ -23,7 +23,9 @@ czm_raySegment czm_raySphereIntersectionInterval(vec3 rayOrigin, vec3 rayDirecti
     float det = (b * b) - (4.0 * a * c);
 
     if (det < 0.0) {
-        return czm_emptyRaySegment;
+        t0 = -czm_infinity;
+        t1 = -czm_infinity;
+        return;
     }
 
     float sqrtDet = sqrt(det);
@@ -31,6 +33,5 @@ czm_raySegment czm_raySphereIntersectionInterval(vec3 rayOrigin, vec3 rayDirecti
     t0 = (-b - sqrtDet) / (2.0 * a);
     t1 = (-b + sqrtDet) / (2.0 * a);
 
-    czm_raySegment result = czm_raySegment(t0, t1);
-    return result;
+    return;
 }

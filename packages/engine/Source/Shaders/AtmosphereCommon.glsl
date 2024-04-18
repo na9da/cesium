@@ -111,7 +111,7 @@ void computeScattering(
         // Generate ray from the sample position segment to the light source, up to the outer ring of the atmosphere.
         float lightRayStart;
         float lightRayStop;
-        czm_raySegment lightRayAtmosphereIntersect = czm_raySphereIntersectionInterval(samplePosition, lightDirection, origin, atmosphereOuterRadius, lightRayStart, lightRayStop);
+        czm_raySphereIntersectionInterval(samplePosition, lightDirection, origin, atmosphereOuterRadius, lightRayStart, lightRayStop);
 
         float lightStepLength = lightRayStop / float(LIGHT_STEPS);
         float lightPositionLength = 0.0;
