@@ -284,9 +284,11 @@ vec3 computeEllipsoidPosition()
 
     vec3 ellipsoid_center = czm_view[3].xyz;
 
-    czm_raySegment intersection = czm_rayEllipsoidIntersectionInterval(ray, ellipsoid_center, czm_ellipsoidInverseRadii);
+    float intersectionStart;
+    float intersectionStop;
+    czm_rayEllipsoidIntersectionInterval(ray, ellipsoid_center, czm_ellipsoidInverseRadii, intersectionStart, intersectionStop);
 
-    vec3 ellipsoidPosition = czm_pointAlongRay(ray, intersection.start);
+    vec3 ellipsoidPosition = czm_pointAlongRay(ray, intersectionStart);
     return (czm_inverseView * vec4(ellipsoidPosition, 1.0)).xyz;
 }
 
