@@ -1,4 +1,5 @@
 import AssociativeArray from "../Core/AssociativeArray.js";
+import BillboardTexture from "../Scene/BillboardTexture.js";
 import Cartesian3 from "../Core/Cartesian3.js";
 import Color from "../Core/Color.js";
 import defined from "../Core/defined.js";
@@ -293,7 +294,13 @@ PointVisualizer.prototype.update = function (time) {
           newOutlineWidth,
         ]);
 
-        billboard.setImage(
+        if (!billboard._preloadedImageTexture) {
+          billboard._preloadedImageTexture = new BillboardTexture(
+            billboard._billboardCollection,
+          );
+        }
+
+        billboard._preloadedImageTexture.loadImage(
           textureId,
           createBillboardPointCallback(
             centerAlpha,
@@ -303,6 +310,15 @@ PointVisualizer.prototype.update = function (time) {
             newPixelSize,
           ),
         );
+      }
+
+      const preloadedTexture = billboard._preloadedImageTexture;
+      if (
+        preloadedTexture &&
+        preloadedTexture.ready &&
+        preloadedTexture.id !== billboard._imageTexture.id
+      ) {
+        billboard.setImageTexture(preloadedTexture);
       }
 
       if (updateClamping) {
